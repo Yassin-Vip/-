@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة التحكم - Admin</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+  body { background: #0f1117; color: #e6e8ee; min-height: 100vh; }
+
+  /* Login Screen */
+  #loginScreen {
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; padding: 20px;
+    background: linear-gradient(135deg, #0f1117, #1a1d29);
+  }
+  .login-box {
+    background: #1a1d29; padding: 35px; border-radius: 16px;
+    width: 100%; max-width: 380px; border: 1px solid #2a2e3f;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  .login-box h2 { text-align: center; margin-bottom: 25px; color: #a8b0ff; }
+  .login-box input {
+    width: 100%; padding: 12px; margin-bottom: 12px;
+    background: #0f1117; border: 1px solid #2a2e3f;
+    border-radius: 8px; color: #fff; font-size: 14px;
+  }
+  .login-box input:focus { outline: none; border-color: #667eea; }
+  .login-box button {
+    width: 100%; padding: 12px; border: none; border-radius: 8px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff; font-weight: 600; cursor: pointer; font-size: 15px;
+  }
+  .login-box .error { color: #e74c3c; font-size: 13px; margin-top: 10px; text-align: center; }
+
+  /* Main App */
+  #mainApp { display: none; }
+  
+  /* Sidebar */
+  .sidebar {
+    position: fixed; right: 0; top: 0; bottom: 0; width: 240px;
+    background: #1a1d29; border-left: 1px solid #2a2e3f;
+    padding: 20px 0; overflow-y: auto; z-index: 40;
+    transition: 0.3s;
+  }
+  .sidebar h2 {
+    text-align: center; font-size: 17px; margin-bottom: 25px;
+    color: #a8b0ff; padding: 0 15px;
+  }
+  .sidebar nav button {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; padding: 12px 20px; background: transparent;
+    border: none; color: #aaa; cursor: pointer; font-size: 14px;
+    text-align: right; border-right: 3px solid transparent;
+    transition: 0.2s;
+  }
+  .sidebar nav button:hover { background: #23263a; color: #fff; }
+  .sidebar nav button.active {
+    background: #23263a; color: #a8b0ff;
+    border-right-color: #667eea;
+  }
+  .sidebar .logout-btn {
+    margin: 20px 15px; padding: 10px; width: calc(100% - 30px);
+    background: #e74c3c22; color: #e74c3c;
+    border: 1px solid #e74c3c55; border-radius: 8px;
+    cursor: pointer; font-size: 13px;
+  }
+
+  /* Content */
+  .content {
+    margin-right: 240px; padding: 20px; min-height: 100vh;
+  }
+  .page { display: none; animation: fade 0.3s ease; }
+  .page.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  .page-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+  }
+  .page-header h1 { font-size: 22px; color: #fff; }
+  .btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff; border: none; padding: 10px 20px;
+    border-radius: 10px; cursor: pointer; font-weight: 600;
+    font-size: 14px;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+
+  /* Stats Cards */
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px; margin-bottom: 25px;
+  }
+  .stat-card {
+    background: #1a1d29; padding: 20px; border-radius: 14px;
+    border: 1px solid #2a2e3f;
+  }
+  .stat-card .icon { font-size: 28px; margin-bottom: 8px; }
+  .stat-card .value { font-size: 26px; font-weight: 700; color: #a8b0ff; }
+  .stat-card .label { font-size: 13px; color: #888; margin-top: 4px; }
+
+  /* Tables / Lists */
+  .card {
+    background: #1a1d29; border-radius: 14px;
+    border: 1px solid #2a2e3f; padding: 18px; margin-bottom: 15px;
+    animation: slide 0.3s ease;
+  }
+  @keyframes slide { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+  
+  .order-head {
+    display: flex; justify-content: space-between; align-items: start;
+    flex-wrap: wrap; gap: 10px; margin-bottom: 10px;
+  }
+  .order-course { font-size: 16px; color: #a8b0ff; font-weight: 600; }
+  .order-id { font-size: 11px; color: #666; margin-top: 4px; }
+  .badge {
+    padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .badge.جديد { background: #f39c12; color: #000; }
+  .badge.تم_التواصل { background: #3498db; color: #fff; }
+  .badge.تم_الدفع { background: #2ecc71; color: #fff; }
+  .badge.ملغي { background: #e74c3c; color: #fff; }
+
+  .cust-info {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px; margin: 10px 0; font-size: 13px; color: #aaa;
+  }
+  .cust-info b { color: #e6e8ee; }
+
+  .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+  .actions button, .actions a {
+    padding: 7px 12px; border: none; border-radius: 8px;
+    cursor: pointer; font-size: 12px; font-weight: 600;
+    text-decoration: none; color: #fff; display: inline-block;
+  }
+  .wa { background: #25D366; }
+  .sms { background: #667eea; }
+  .call { background: #34495e; }
+  .contact { background: #3498db; }
+  .paid { background: #2ecc71; }
+  .cancel { background: #e74c3c; }
+  .edit { background: #f39c12; color: #000; }
+  .delete { background: #c0392b; }
+
+  .msg-input { display: flex; gap: 6px; margin-top: 10px; }
+  .msg-input input {
+    flex: 1; padding: 8px 10px; border-radius: 8px;
+    border: 1px solid #2a2e3f; background: #0f1117;
+    color: #fff; font-size: 13px;
+  }
+  .msg-input button {
+    background: #667eea; color: #fff; padding: 8px 14px;
+    border: none; border-radius: 8px; cursor: pointer;
+    font-weight: 600; font-size: 13px;
+  }
+
+  .filter {
+    display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;
+  }
+  .filter button {
+    padding: 7px 14px; border: 1px solid #2a2e3f;
+    background: #1a1d29; color: #aaa; border-radius: 20px;
+    cursor: pointer; font-size: 13px;
+  }
+  .filter button.active {
+    background: #667eea; color: #fff; border-color: #667eea;
+  }
+
+  /* Course Card in Admin */
+  .admin-course {
+    display: flex; gap: 12px; align-items: center;
+    background: #1a1d29; padding: 12px; border-radius: 12px;
+    margin-bottom: 10px; border: 1px solid #2a2e3f;
+  }
+  .admin-course img {
+    width: 80px; height: 60px; object-fit: cover; border-radius: 8px;
+  }
+  .admin-course .info { flex: 1; }
+  .admin-course .info h4 { font-size: 15px; color: #fff; margin-bottom: 4px; }
+  .admin-course .info small { color: #888; font-size: 12px; }
+  .admin-course .info .price { color: #a8b0ff; font-weight: 600; margin-top: 4px; }
+  .admin-course .btns { display: flex; gap: 6px; }
+
+  /* Form Modal */
+  .modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 100; justify-content: center; align-items: center; padding: 15px;
+  }
+  .modal.active { display: flex; }
+  .modal-content {
+    background: #1a1d29; padding: 25px; border-radius: 14px;
+    width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto;
+    border: 1px solid #2a2e3f;
+  }
+  .modal-content h2 { margin-bottom: 18px; color: #a8b0ff; font-size: 19px; }
+  .modal-content label {
+    display: block; font-size: 13px; color: #aaa; margin-bottom: 5px;
+  }
+  .modal-content input, .modal-content textarea, .modal-content select {
+    width: 100%; padding: 10px; margin-bottom: 12px;
+    background: #0f1117; border: 1px solid #2a2e3f;
+    border-radius: 8px; color: #fff; font-size: 14px;
+    font-family: inherit;
+  }
+  .modal-content input:focus, .modal-content textarea:focus, .modal-content select:focus {
+    outline: none; border-color: #667eea;
+  }
+  .modal-content button {
+    width: 100%; padding: 12px; border: none; border-radius: 8px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff; font-weight: 600; cursor: pointer;
+    margin-top: 5px; font-size: 15px;
+  }
+  .modal-content .cancel { background: #2a2e3f; color: #ccc; margin-top: 8px; }
+
+  /* Notification */
+  .notification {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #f39c12; color: #000; padding: 14px 22px;
+    border-radius: 10px; font-weight: 600; z-index: 200;
+    box-shadow: 0 6px 20px rgba(243,156,18,0.5);
+    animation: pop 0.4s ease; max-width: 90%;
+  }
+  @keyframes pop { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+  .loading { text-align: center; padding: 40px; color: #667eea; }
+
+  /* Mobile */
+  .menu-toggle {
+    display: none; position: fixed; top: 15px; right: 15px;
+    z-index: 60; background: #667eea; color: #fff;
+    border: none; width: 44px; height: 44px; border-radius: 50%;
+    font-size: 20px; cursor: pointer;
+  }
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(100%); }
+    .sidebar.open { transform: translateX(0); }
+    .content { margin-right: 0; padding-top: 70px; }
+    .menu-toggle { display: block; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <h2>🔐 تسجيل دخول المسؤول</h2>
+    <input type="email" id="loginEmail" placeholder="البريد الإلكتروني">
+    <input type="password" id="loginPassword" placeholder="كلمة المرور">
+    <button onclick="login()">دخول</button>
+    <div class="error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- ============ MAIN APP ============ -->
+<div id="mainApp">
+  <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+  <aside class="sidebar">
+    <h2>⚙️ لوحة التحكم</h2>
+    <nav>
+      <button class="active" data-page="dashboard" onclick="showPage('dashboard')">📊 الإحصائيات</button>
+      <button data-page="orders" onclick="showPage('orders')">📥 الطلبات <span id="newBadge" style="background:#e74c3c;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:5px;display:none"></span></button>
+      <button data-page="courses" onclick="showPage('courses')">📚 الكورسات</button>
+      <button data-page="categories" onclick="showPage('categories')">🗂️ التصنيفات</button>
+      <button data-page="customers" onclick="showPage('customers')">👥 العملاء</button>
+    </nav>
+    <button class="logout-btn" onclick="logout()">🚪 تسجيل خروج</button>
+  </aside>
+
+  <main class="content">
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header"><h1>📊 نظرة عامة</h1></div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="icon">📦</div>
+          <div class="value" id="statTotalOrders">0</div>
+          <div class="label">إجمالي الطلبات</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon">🆕</div>
+          <div class="value" id="statNewOrders">0</div>
+          <div class="label">طلبات جديدة</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon">💰</div>
+          <div class="value" id="statRevenue">0</div>
+          <div class="label">الإيرادات (ج.م)</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon">📚</div>
+          <div class="value" id="statCourses">0</div>
+          <div class="label">الكورسات المتاحة</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon">👥</div>
+          <div class="value" id="statCustomers">0</div>
+          <div class="label">عدد العملاء</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon">🏆</div>
+          <div class="value" id="statTopCourse" style="font-size:14px">—</div>
+          <div class="label">الأكثر مبيعًا</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:12px;color:#a8b0ff">🕐 أحدث الطلبات</h3>
+        <div id="recentOrders"></div>
+      </div>
+    </div>
+
+    <!-- Orders -->
+    <div class="page" id="page-orders">
+      <div class="page-header"><h1>📥 إدارة الطلبات</h1></div>
+      <div class="filter">
+        <button class="active" data-filter="all" onclick="setOrderFilter('all', this)">الكل</button>
+        <button data-filter="جديد" onclick="setOrderFilter('جديد', this)">🆕 جديد</button>
+        <button data-filter="تم_التواصل" onclick="setOrderFilter('تم_التواصل', this)">📞 تم التواصل</button>
+        <button data-filter="تم_الدفع" onclick="setOrderFilter('تم_الدفع', this)">✅ تم الدفع</button>
+        <button data-filter="ملغي" onclick="setOrderFilter('ملغي', this)">❌ ملغي</button>
+      </div>
+      <div id="ordersList"></div>
+    </div>
+
+    <!-- Courses -->
+    <div class="page" id="page-courses">
+      <div class="page-header">
+        <h1>📚 إدارة الكورسات</h1>
+        <button class="btn-primary" onclick="openCourseModal()">➕ إضافة كورس</button>
+      </div>
+      <div id="coursesList"></div>
+    </div>
+
+    <!-- Categories -->
+    <div class="page" id="page-categories">
+      <div class="page-header">
+        <h1>🗂️ إدارة التصنيفات</h1>
+        <button class="btn-primary" onclick="openCategoryModal()">➕ إضافة تصنيف</button>
+      </div>
+      <div id="categoriesList"></div>
+    </div>
+
+    <!-- Customers -->
+    <div class="page" id="page-customers">
+      <div class="page-header"><h1>👥 قائمة العملاء</h1></div>
+      <div id="customersList"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Course Modal -->
+<div class="modal" id="courseModal">
+  <div class="modal-content">
+    <h2 id="courseModalTitle">➕ إضافة كورس جديد</h2>
+    <input type="hidden" id="courseEditId">
+    <label>عنوان الكورس *</label>
+    <input type="text" id="courseTitle" placeholder="مثال: تعلم Python">
+    <label>الوصف</label>
+    <textarea id="courseDesc" rows="3" placeholder="وصف مختصر..."></textarea>
+    <label>السعر (ج.م) *</label>
+    <input type="number" id="coursePrice" placeholder="200">
+    <label>التصنيف *</label>
+    <select id="courseCategory"></select>
+    <label>رابط الصورة</label>
+    <input type="url" id="courseImg" placeholder="https://...">
+    <button onclick="saveCourse()">💾 حفظ</button>
+    <button class="cancel" onclick="closeCourseModal()">إلغاء</button>
+  </div>
+</div>
+
+<!-- Category Modal -->
+<div class="modal" id="categoryModal">
+  <div class="modal-content">
+    <h2>➕ إضافة تصنيف جديد</h2>
+    <input type="text" id="categoryName" placeholder="اسم التصنيف (مثال: برمجة)">
+    <input type="text" id="categoryIcon" placeholder="أيقونة (إيموجي) اختياري">
+    <button onclick="saveCategory()">💾 حفظ</button>
+    <button class="cancel" onclick="closeCategoryModal()">إلغاء</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { 
+  getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc,
+  serverTimestamp, query, orderBy
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { 
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC__mYLruuFTZX4rys71hFj2-E3dYXI12Q",
+  authDomain: "cours-app-ee71b.firebaseapp.com",
+  projectId: "cours-app-ee71b",
+  storageBucket: "cours-app-ee71b.firebasestorage.app",
+  messagingSenderId: "23473077155",
+  appId: "1:23473077155:web:63e9f7d8b8440e02707816"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+let allOrders = [];
+let allCourses = [];
+let allCategories = [];
+let orderFilter = 'all';
+let isFirstOrdersLoad = true;
+let dataListenersStarted = false;
+
+// ============ AUTH ============
+window.login = async function() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const err = document.getElementById('loginError');
+  err.textContent = '';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch (e) {
+    err.textContent = '❌ ' + (e.code === 'auth/invalid-credential' 
+      ? 'إيميل أو باسورد غلط' 
+      : e.message);
+  }
+};
+
+window.logout = async function() {
+  await signOut(auth);
+};
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    if (!dataListenersStarted) {
+      startListeners();
+      dataListenersStarted = true;
+    }
+  } else {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('mainApp').style.display = 'none';
+  }
+});
+
+// ============ LISTENERS ============
+function startListeners() {
+  // الطلبات
+  const ordersQ = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+  onSnapshot(ordersQ, (snap) => {
+    const oldIds = allOrders.map(o => o.id);
+    allOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    if (!isFirstOrdersLoad) {
+      allOrders.filter(o => !oldIds.includes(o.id)).forEach(o => {
+        showNotification(`🔔 طلب جديد: ${o.customerName} - ${o.courseTitle}`);
+        beep();
+      });
+    }
+    isFirstOrdersLoad = false;
+    updateNewBadge();
+    renderAll();
+  });
+
+  // الكورسات
+  onSnapshot(collection(db, 'courses'), (snap) => {
+    allCourses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderAll();
+  });
+
+  // التصنيفات
+  onSnapshot(collection(db, 'categories'), (snap) => {
+    allCategories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderAll();
+  });
+}
+
+function updateNewBadge() {
+  const count = allOrders.filter(o => o.status === 'جديد').length;
+  const badge = document.getElementById('newBadge');
+  if (count > 0) {
+    badge.textContent = count;
+    badge.style.display = 'inline';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderAll() {
+  renderDashboard();
+  renderOrders();
+  renderCoursesList();
+  renderCategoriesList();
+  renderCustomersList();
+}
+
+// ============ NAVIGATION ============
+window.showPage = function(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.sidebar nav button').forEach(b => {
+    b.classList.toggle('active', b.dataset.page === page);
+  });
+  document.querySelector('.sidebar').classList.remove('open');
+};
+
+// ============ DASHBOARD ============
+function renderDashboard() {
+  document.getElementById('statTotalOrders').textContent = allOrders.length;
+  document.getElementById('statNewOrders').textContent = 
+    allOrders.filter(o => o.status === 'جديد').length;
+  document.getElementById('statRevenue').textContent = 
+    allOrders.filter(o => o.status === 'تم_الدفع')
+      .reduce((s,o) => s + (Number(o.coursePrice) || 0), 0).toLocaleString();
+  document.getElementById('statCourses').textContent = 
+    allCourses.filter(c => c.active !== false).length;
+  
+  const uniqueCustomers = new Set(allOrders.map(o => o.customerPhone)).size;
+  document.getElementById('statCustomers').textContent = uniqueCustomers;
+
+  // الأكثر مبيعًا
+  const counts = {};
+  allOrders.forEach(o => { counts[o.courseTitle] = (counts[o.courseTitle] || 0) + 1; });
+  const top = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+  document.getElementById('statTopCourse').textContent = top ? top[0] : '—';
+
+  // أحدث 3 طلبات
+  document.getElementById('recentOrders').innerHTML = allOrders.slice(0, 3)
+    .map(o => `
+      <div style="padding:10px;border-bottom:1px solid #2a2e3f;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div>
+          <b style="color:#fff">${o.customerName}</b>
+          <div style="font-size:12px;color:#888">${o.courseTitle} • ${o.coursePrice} ج.م</div>
+        </div>
+        <span class="badge ${o.status}">${o.status.replace('_',' ')}</span>
+      </div>
+    `).join('') || '<div style="color:#666;padding:10px">لا توجد طلبات بعد</div>';
+}
+
+// ============ ORDERS ============
+window.setOrderFilter = function(f, btn) {
+  orderFilter = f;
+  document.querySelectorAll('#page-orders .filter button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderOrders();
+};
+
+function renderOrders() {
+  let orders = allOrders;
+  if (orderFilter !== 'all') orders = orders.filter(o => o.status === orderFilter);
+  
+  const list = document.getElementById('ordersList');
+  if (!orders.length) {
+    list.innerHTML = '<div class="card" style="text-align:center;color:#666">📭 لا توجد طلبات</div>';
+    return;
+  }
+
+  list.innerHTML = orders.map(o => {
+    const phone = (o.customerPhone || '').replace(/[^0-9]/g,'');
+    const intl = phone.startsWith('0') ? '2' + phone : phone;
+    const waMsg = encodeURIComponent(
+      `مرحبًا ${o.customerName} 👋\nبخصوص طلبك في كورس: ${o.courseTitle}\nالسعر: ${o.coursePrice} ج.م`
+    );
+    return `
+    <div class="card">
+      <div class="order-head">
+        <div>
+          <div class="order-course">📚 ${o.courseTitle}</div>
+          <div class="order-id">${o.createdAtStr || ''} • ${o.courseCategory || ''}</div>
+        </div>
+        <span class="badge ${o.status}">${o.status.replace('_',' ')}</span>
+      </div>
+      <div class="cust-info">
+        <div>👤 <b>${o.customerName}</b></div>
+        <div>📞 <b>${o.customerPhone}</b></div>
+        <div>📧 <b>${o.customerEmail || '—'}</b></div>
+        <div>💵 <b>${o.coursePrice} ج.م</b></div>
+        ${o.customerNote ? `<div style="grid-column:1/-1">📝 <b>${o.customerNote}</b></div>` : ''}
+      </div>
+      <div class="msg-input">
+        <input type="text" id="msg-${o.id}" placeholder="اكتب رسالة سريعة...">
+        <button onclick="sendMsg('${o.id}')">📨 إرسال</button>
+      </div>
+      <div class="actions">
+        <a class="wa" target="_blank" href="https://wa.me/${intl}?text=${waMsg}">💬 واتساب</a>
+        <a class="sms" href="sms:${o.customerPhone}">✉️ SMS</a>
+        <a class="call" href="tel:${o.customerPhone}">📞 اتصال</a>
+        <button class="contact" onclick="setStatus('${o.id}','تم_التواصل')">✅ تم التواصل</button>
+        <button class="paid" onclick="setStatus('${o.id}','تم_الدفع')">💰 تم الدفع</button>
+        <button class="cancel" onclick="setStatus('${o.id}','ملغي')">❌ إلغاء</button>
+        <button class="delete" onclick="deleteOrder('${o.id}')">🗑️ حذف</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.setStatus = async function(id, status) {
+  try { await updateDoc(doc(db, 'orders', id), { status }); }
+  catch(e) { alert(e.message); }
+};
+
+window.deleteOrder = async function(id) {
+  if (!confirm('هل أنت متأكد من حذف الطلب؟')) return;
+  try { await deleteDoc(doc(db, 'orders', id)); }
+  catch(e) { alert(e.message); }
+};
+
+window.sendMsg = function(id) {
+  const input = document.getElementById('msg-' + id);
+  const msg = input.value.trim();
+  if (!msg) return;
+  const o = allOrders.find(x => x.id === id);
+  if (!o) return;
+  const phone = (o.customerPhone || '').replace(/[^0-9]/g,'');
+  const intl = phone.startsWith('0') ? '2' + phone : phone;
+  window.open(`https://wa.me/${intl}?text=${encodeURIComponent(msg)}`, '_blank');
+  input.value = '';
+  setStatus(id, 'تم_التواصل');
+};
+
+// ============ COURSES ============
+function renderCoursesList() {
+  const list = document.getElementById('coursesList');
+  if (!allCourses.length) {
+    list.innerHTML = '<div class="card" style="text-align:center;color:#666">لا توجد كورسات. اضغط "إضافة كورس"</div>';
+    return;
+  }
+  list.innerHTML = allCourses.map(c => `
+    <div class="admin-course">
+      <img src="${c.img || 'https://via.placeholder.com/80x60/667eea/fff?text=?'}">
+      <div class="info">
+        <h4>${c.title} ${c.active === false ? '<span style="color:#e74c3c;font-size:11px">(معطّل)</span>' : ''}</h4>
+        <small>${c.category || 'بدون تصنيف'}</small>
+        <div class="price">${c.price} ج.م</div>
+      </div>
+      <div class="btns">
+        <button class="edit" onclick="openCourseModal('${c.id}')">✏️</button>
+        <button class="delete" onclick="deleteCourse('${c.id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.openCourseModal = function(id = null) {
+  const modal = document.getElementById('courseModal');
+  const select = document.getElementById('courseCategory');
+  select.innerHTML = '<option value="">-- اختر تصنيف --</option>' +
+    allCategories.map(c => `<option value="${c.name}">${c.icon || ''} ${c.name}</option>`).join('');
+  
+  if (id) {
+    const c = allCourses.find(x => x.id === id);
+    if (!c) return;
+    document.getElementById('courseModalTitle').textContent = '✏️ تعديل الكورس';
+    document.getElementById('courseEditId').value = id;
+    document.getElementById('courseTitle').value = c.title || '';
+    document.getElementById('courseDesc').value = c.desc || '';
+    document.getElementById('coursePrice').value = c.price || '';
+    document.getElementById('courseCategory').value = c.category || '';
+    document.getElementById('courseImg').value = c.img || '';
+  } else {
+    document.getElementById('courseModalTitle').textContent = '➕ إضافة كورس جديد';
+    document.getElementById('courseEditId').value = '';
+    ['courseTitle','courseDesc','coursePrice','courseImg'].forEach(i => 
+      document.getElementById(i).value = ''
+    );
+    document.getElementById('courseCategory').value = '';
+  }
+  modal.classList.add('active');
+};
+
+window.closeCourseModal = function() {
+  document.getElementById('courseModal').classList.remove('active');
+};
+
+window.saveCourse = async function() {
+  const id = document.getElementById('courseEditId').value;
+  const title = document.getElementById('courseTitle').value.trim();
+  const desc = document.getElementById('courseDesc').value.trim();
+  const price = Number(document.getElementById('coursePrice').value);
+  const category = document.getElementById('courseCategory').value;
+  const img = document.getElementById('courseImg').value.trim();
+
+  if (!title || !price || !category) {
+    alert('الرجاء ملء الحقول المطلوبة (العنوان، السعر، التصنيف)');
+    return;
+  }
+
+  const data = { title, desc, price, category, img, active: true };
+
+  try {
+    if (id) {
+      await updateDoc(doc(db, 'courses', id), data);
+    } else {
+      await addDoc(collection(db, 'courses'), { ...data, createdAt: serverTimestamp() });
+    }
+    closeCourseModal();
+  } catch(e) { alert(e.message); }
+};
+
+window.deleteCourse = async function(id) {
+  if (!confirm('حذف الكورس؟')) return;
+  try { await deleteDoc(doc(db, 'courses', id)); }
+  catch(e) { alert(e.message); }
+};
+
+// ============ CATEGORIES ============
+function renderCategoriesList() {
+  const list = document.getElementById('categoriesList');
+  if (!allCategories.length) {
+    list.innerHTML = '<div class="card" style="text-align:center;color:#666">لا توجد تصنيفات بعد</div>';
+    return;
+  }
+  list.innerHTML = allCategories.map(c => `
+    <div class="admin-course">
+      <div style="font-size:32px;width:60px;text-align:center">${c.icon || '📁'}</div>
+      <div class="info">
+        <h4>${c.name}</h4>
+        <small>${allCourses.filter(x => x.category === c.name).length} كورس</small>
+      </div>
+      <div class="btns">
+        <button class="delete" onclick="deleteCategory('${c.id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.openCategoryModal = function() {
+  document.getElementById('categoryName').value = '';
+  document.getElementById('categoryIcon').value = '';
+  document.getElementById('categoryModal').classList.add('active');
+};
+
+window.closeCategoryModal = function() {
+  document.getElementById('categoryModal').classList.remove('active');
+};
+
+window.saveCategory = async function() {
+  const name = document.getElementById('categoryName').value.trim();
+  const icon = document.getElementById('categoryIcon').value.trim();
+  if (!name) { alert('اكتب اسم التصنيف'); return; }
+  try {
+    await addDoc(collection(db, 'categories'), { name, icon });
+    closeCategoryModal();
+  } catch(e) { alert(e.message); }
+};
+
+window.deleteCategory = async function(id) {
+  if (!confirm('حذف التصنيف؟')) return;
+  try { await deleteDoc(doc(db, 'categories', id)); }
+  catch(e) { alert(e.message); }
+};
+
+// ============ CUSTOMERS ============
+function renderCustomersList() {
+  const map = {};
+  allOrders.forEach(o => {
+    if (!map[o.customerPhone]) {
+      map[o.customerPhone] = {
+        name: o.customerName,
+        phone: o.customerPhone,
+        email: o.customerEmail,
+        orders: 0,
+        total: 0
+      };
+    }
+    map[o.customerPhone].orders++;
+    if (o.status === 'تم_الدفع') {
+      map[o.customerPhone].total += Number(o.coursePrice) || 0;
+    }
+  });
+
+  const customers = Object.values(map);
+  const list = document.getElementById('customersList');
+
+  if (!customers.length) {
+    list.innerHTML = '<div class="card" style="text-align:center;color:#666">لا يوجد عملاء بعد</div>';
+    return;
+  }
+
+  list.innerHTML = customers.map(c => {
+    const phone = c.phone.replace(/[^0-9]/g,'');
+    const intl = phone.startsWith('0') ? '2' + phone : phone;
+    return `
+      <div class="admin-course">
+        <div style="font-size:32px;width:60px;text-align:center">👤</div>
+        <div class="info">
+          <h4>${c.name}</h4>
+          <small>📞 ${c.phone} • 📧 ${c.email || '—'}</small>
+          <div class="price">🛒 ${c.orders} طلب • 💰 أنفق ${c.total} ج.م</div>
+        </div>
+        <div class="btns">
+          <a class="wa" target="_blank" href="https://wa.me/${intl}" style="padding:8px 12px;border-radius:8px;text-decoration:none;color:#fff;font-size:13px">💬</a>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============ HELPERS ============
+function beep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = 880; g.gain.value = 0.15;
+    o.start();
+    setTimeout(() => o.frequency.value = 1200, 150);
+    setTimeout(() => o.stop(), 350);
+  } catch(e) {}
+}
+
+function showNotification(msg) {
+  const n = document.createElement('div');
+  n.className = 'notification';
+  n.textContent = msg;
+  document.body.appendChild(n);
+  setTimeout(() => n.remove(), 4000);
+}
+</script>
+</body>
+</html>
